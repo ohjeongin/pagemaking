@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef } from 'react';
-import { Type, Image as ImageIcon, Sparkles, Plus, Layout, BringToFront, SendToBack } from 'lucide-react';
+import { Type, Image as ImageIcon, Sparkles, Plus, Layout, BringToFront, SendToBack, Square, Circle, Minus, Wand2 } from 'lucide-react';
 import { BlockType } from '@/utils/block-templates';
 
 interface SidebarProps {
@@ -14,6 +14,8 @@ interface SidebarProps {
     onSetTextureBackground?: (url: string) => void;
     onSetGradientBackground?: (stops: { color: string, offset: number }[]) => void;
     onGenerateAIDetail?: () => void;
+    onAddShape?: (type: 'rect' | 'circle' | 'line') => void;
+    onAddAIImage?: (prompt: string) => void;
 }
 
 const FONTS = [
@@ -22,12 +24,14 @@ const FONTS = [
     { name: 'Noto Sans KR', family: 'Noto Sans KR' },
 ];
 
-const Sidebar: React.FC<SidebarProps> = ({ onAddText, onAddImages, onAddBlock, onGenerateCopy, onGenerateBackground, onSetSolidBackground, onSetTextureBackground, onSetGradientBackground, onGenerateAIDetail }) => {
+const Sidebar: React.FC<SidebarProps> = ({ onAddText, onAddImages, onAddBlock, onGenerateCopy, onGenerateBackground, onSetSolidBackground, onSetTextureBackground, onSetGradientBackground, onGenerateAIDetail, onAddShape, onAddAIImage }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [keywords, setKeywords] = React.useState('');
     const [loading, setLoading] = React.useState(false);
     const [selectedStyle, setSelectedStyle] = React.useState('감성 스튜디오');
     const [customColor, setCustomColor] = React.useState('#fde047');
+    const [aiImagePrompt, setAiImagePrompt] = React.useState('');
+    const [aiImageLoading, setAiImageLoading] = React.useState(false);
     const [gradientStops, setGradientStops] = React.useState([
         { color: '#3b82f6', offset: 0 },
         { color: '#8b5cf6', offset: 1 }
@@ -114,6 +118,61 @@ const Sidebar: React.FC<SidebarProps> = ({ onAddText, onAddImages, onAddBlock, o
                             />
                         </button>
                     </div>
+                </section>
+
+                {/* Shape Library */}
+                <section>
+                    <h3 className="text-xs font-black text-zinc-400 uppercase tracking-widest mb-4">도형 추가</h3>
+                    <div className="grid grid-cols-3 gap-3">
+                        <button
+                            onClick={() => onAddShape?.('rect')}
+                            className="flex flex-col items-center justify-center p-3 rounded-2xl border border-zinc-100 bg-zinc-50 hover:bg-white hover:border-blue-500 hover:text-blue-600 transition-all group"
+                        >
+                            <Square className="mb-1.5 text-zinc-400 group-hover:text-blue-500" size={22} />
+                            <span className="text-[10px] font-bold">사각형</span>
+                        </button>
+                        <button
+                            onClick={() => onAddShape?.('circle')}
+                            className="flex flex-col items-center justify-center p-3 rounded-2xl border border-zinc-100 bg-zinc-50 hover:bg-white hover:border-blue-500 hover:text-blue-600 transition-all group"
+                        >
+                            <Circle className="mb-1.5 text-zinc-400 group-hover:text-blue-500" size={22} />
+                            <span className="text-[10px] font-bold">원형</span>
+                        </button>
+                        <button
+                            onClick={() => onAddShape?.('line')}
+                            className="flex flex-col items-center justify-center p-3 rounded-2xl border border-zinc-100 bg-zinc-50 hover:bg-white hover:border-blue-500 hover:text-blue-600 transition-all group"
+                        >
+                            <Minus className="mb-1.5 text-zinc-400 group-hover:text-blue-500" size={22} />
+                            <span className="text-[10px] font-bold">선</span>
+                        </button>
+                    </div>
+                </section>
+
+                {/* AI Image Generation */}
+                <section className="p-5 rounded-2xl bg-violet-50 border border-violet-100 space-y-4">
+                    <div className="flex items-center gap-2">
+                        <Wand2 size={16} className="text-violet-600" />
+                        <span className="text-xs font-black text-violet-600 uppercase tracking-wider">AI 이미지 생성</span>
+                    </div>
+                    <textarea
+                        value={aiImagePrompt}
+                        onChange={(e) => setAiImagePrompt(e.target.value)}
+                        placeholder="예: 홈 카페 인테리어, 상품 배경 이미지, 감성적 일러스트..."
+                        className="w-full p-3 rounded-xl bg-white border border-violet-200 text-xs resize-none h-20 focus:outline-none focus:ring-2 focus:ring-violet-400 placeholder:text-violet-300"
+                    />
+                    <button
+                        onClick={async () => {
+                            if (!aiImagePrompt.trim() || !onAddAIImage) return;
+                            setAiImageLoading(true);
+                            await onAddAIImage(aiImagePrompt);
+                            setAiImageLoading(false);
+                        }}
+                        disabled={aiImageLoading || !aiImagePrompt.trim()}
+                        className="w-full py-2.5 rounded-xl bg-violet-500 text-white font-black text-xs hover:bg-violet-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    >
+                        <Wand2 size={14} />
+                        {aiImageLoading ? '생성 중...' : 'AI 이미지 생성하기'}
+                    </button>
                 </section>
 
                 {/* AI Copywriting */}

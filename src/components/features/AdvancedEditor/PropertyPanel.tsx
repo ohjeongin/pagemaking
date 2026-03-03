@@ -10,7 +10,14 @@ import {
     Maximize,
     Palette,
     Layers,
-    Sparkles
+    Sparkles,
+    AlignLeft,
+    AlignCenter,
+    AlignRight,
+    AlignVerticalJustifyStart,
+    AlignVerticalJustifyCenter,
+    AlignVerticalJustifyEnd,
+    Scissors
 } from 'lucide-react';
 
 interface PropertyPanelProps {
@@ -20,12 +27,15 @@ interface PropertyPanelProps {
     onDelete: () => void;
     onGroup?: () => void;
     onUngroup?: () => void;
+    onAlignObject?: (direction: 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom') => void;
 }
 
-const PropertyPanel: React.FC<PropertyPanelProps> = ({ canvas, activeObject, onUpdate, onDelete, onGroup, onUngroup }) => {
+const PropertyPanel: React.FC<PropertyPanelProps> = ({ canvas, activeObject, onUpdate, onDelete, onGroup, onUngroup, onAlignObject }) => {
     const [localFontSize, setLocalFontSize] = useState(40);
     const [localOpacity, setLocalOpacity] = useState(1);
     const [localColor, setLocalColor] = useState('#111827');
+    const [localStroke, setLocalStroke] = useState('#1e40af');
+    const [localStrokeWidth, setLocalStrokeWidth] = useState(2);
 
     // Sync state when activeObject changes
     useEffect(() => {
@@ -33,6 +43,8 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({ canvas, activeObject, onU
             setLocalFontSize(Math.round(activeObject.get('fontSize') || 40));
             setLocalOpacity(activeObject.get('opacity') || 1);
             setLocalColor(activeObject.get('fill') as string || '#111827');
+            setLocalStroke(activeObject.get('stroke') as string || '#1e40af');
+            setLocalStrokeWidth(activeObject.get('strokeWidth') || 2);
         }
     }, [activeObject]);
 
@@ -47,6 +59,7 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({ canvas, activeObject, onU
 
     const isText = activeObject instanceof fabric.IText;
     const isImage = activeObject instanceof fabric.FabricImage;
+    const isShape = activeObject instanceof fabric.Rect || activeObject instanceof fabric.Circle || activeObject instanceof fabric.Line;
 
     const handleFontSizeChange = (value: number) => {
         setLocalFontSize(value);
@@ -170,6 +183,39 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({ canvas, activeObject, onU
                 </div>
             </div>
 
+            {/* Alignment Toolbar */}
+            {onAlignObject && (
+                <div className="space-y-4">
+                    <h4 className="text-xs font-black text-zinc-900 border-l-4 border-blue-500 pl-2">정렬</h4>
+                    <div className="grid grid-cols-3 gap-2">
+                        <button onClick={() => onAlignObject('left')} className="flex flex-col items-center gap-1 p-2.5 rounded-xl border border-zinc-100 hover:border-blue-500 hover:text-blue-600 transition-all text-[10px] font-bold" title="좌측 정렬">
+                            <AlignLeft size={16} />
+                            <span>좌측</span>
+                        </button>
+                        <button onClick={() => onAlignObject('center')} className="flex flex-col items-center gap-1 p-2.5 rounded-xl border border-zinc-100 hover:border-blue-500 hover:text-blue-600 transition-all text-[10px] font-bold" title="가운데 정렬">
+                            <AlignCenter size={16} />
+                            <span>가운데</span>
+                        </button>
+                        <button onClick={() => onAlignObject('right')} className="flex flex-col items-center gap-1 p-2.5 rounded-xl border border-zinc-100 hover:border-blue-500 hover:text-blue-600 transition-all text-[10px] font-bold" title="우측 정렬">
+                            <AlignRight size={16} />
+                            <span>우측</span>
+                        </button>
+                        <button onClick={() => onAlignObject('top')} className="flex flex-col items-center gap-1 p-2.5 rounded-xl border border-zinc-100 hover:border-blue-500 hover:text-blue-600 transition-all text-[10px] font-bold" title="상단 정렬">
+                            <AlignVerticalJustifyStart size={16} />
+                            <span>상단</span>
+                        </button>
+                        <button onClick={() => onAlignObject('middle')} className="flex flex-col items-center gap-1 p-2.5 rounded-xl border border-zinc-100 hover:border-blue-500 hover:text-blue-600 transition-all text-[10px] font-bold" title="수직 중앙">
+                            <AlignVerticalJustifyCenter size={16} />
+                            <span>중앙</span>
+                        </button>
+                        <button onClick={() => onAlignObject('bottom')} className="flex flex-col items-center gap-1 p-2.5 rounded-xl border border-zinc-100 hover:border-blue-500 hover:text-blue-600 transition-all text-[10px] font-bold" title="하단 정렬">
+                            <AlignVerticalJustifyEnd size={16} />
+                            <span>하단</span>
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Text Specific Controls */}
             {isText && (
                 <div className="space-y-6">
@@ -224,6 +270,103 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({ canvas, activeObject, onU
                 </div>
             )}
 
+            {/* Shape Specific Controls */}
+            {isShape && (
+                <div className="space-y-6">
+                    <h4 className="text-xs font-black text-zinc-900 border-l-4 border-blue-500 pl-2">도형 스타일</h4>
+
+                    <div className="space-y-3">
+                        <label className="text-[10px] font-black text-zinc-400 uppercase">채우기 색상</label>
+                        <div className="flex gap-2 flex-wrap mb-2">
+                            {['#3b82f6', '#10b981', '#ef4444', '#f59e0b', '#8b5cf6', '#ec4899', '#ffffff', '#111827'].map(color => (
+                                <button
+                                    key={color}
+                                    onClick={() => {
+                                        setLocalColor(color);
+                                        activeObject.set('fill', color);
+                                        canvas.requestRenderAll();
+                                    }}
+                                    className={`w-7 h-7 rounded-full border shadow-sm transition-all hover:scale-110 ${localColor === color ? 'border-blue-500 scale-110 ring-2 ring-blue-200' : 'border-zinc-200'}`}
+                                    style={{ backgroundColor: color }}
+                                />
+                            ))}
+                        </div>
+                        <div className="flex items-center gap-3 p-3 rounded-xl bg-zinc-50 border border-zinc-100">
+                            <input
+                                type="color"
+                                value={localColor}
+                                onChange={(e) => {
+                                    setLocalColor(e.target.value);
+                                    activeObject.set('fill', e.target.value);
+                                    canvas.requestRenderAll();
+                                }}
+                                className="w-8 h-8 rounded-lg border-0 p-0 cursor-pointer overflow-hidden"
+                            />
+                            <div className="flex-1">
+                                <p className="text-[9px] font-black text-zinc-400 uppercase mb-1">채우기 HEX</p>
+                                <span className="text-[11px] font-bold text-zinc-900">{localColor.toUpperCase()}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="space-y-3">
+                        <label className="text-[10px] font-black text-zinc-400 uppercase">테두리 색상</label>
+                        <div className="flex items-center gap-3 p-3 rounded-xl bg-zinc-50 border border-zinc-100">
+                            <input
+                                type="color"
+                                value={localStroke}
+                                onChange={(e) => {
+                                    setLocalStroke(e.target.value);
+                                    activeObject.set('stroke', e.target.value);
+                                    canvas.requestRenderAll();
+                                }}
+                                className="w-8 h-8 rounded-lg border-0 p-0 cursor-pointer overflow-hidden"
+                            />
+                            <div className="flex-1">
+                                <p className="text-[9px] font-black text-zinc-400 uppercase mb-1">테두리 HEX</p>
+                                <span className="text-[11px] font-bold text-zinc-900">{localStroke.toUpperCase()}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="space-y-3">
+                        <div className="flex justify-between items-center">
+                            <label className="text-[10px] font-black text-zinc-400 uppercase">테두리 굵기</label>
+                            <span className="text-xs font-black text-blue-500">{localStrokeWidth}px</span>
+                        </div>
+                        <input
+                            type="range"
+                            min="0"
+                            max="20"
+                            value={localStrokeWidth}
+                            onChange={(e) => {
+                                const val = parseInt(e.target.value);
+                                setLocalStrokeWidth(val);
+                                activeObject.set('strokeWidth', val);
+                                canvas.requestRenderAll();
+                            }}
+                            className="w-full h-1.5 bg-zinc-100 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                        />
+                    </div>
+
+                    <div className="space-y-3">
+                        <div className="flex justify-between items-center">
+                            <label className="text-[10px] font-black text-zinc-400 uppercase">투명도</label>
+                            <span className="text-xs font-black text-blue-500">{Math.round(localOpacity * 100)}%</span>
+                        </div>
+                        <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.01"
+                            value={localOpacity}
+                            onChange={(e) => handleOpacityChange(parseFloat(e.target.value))}
+                            className="w-full h-1.5 bg-zinc-100 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                        />
+                    </div>
+                </div>
+            )}
+
             {/* Image Specific Controls */}
             {isImage && (
                 <div className="space-y-6">
@@ -270,18 +413,20 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({ canvas, activeObject, onU
                         </div>
                     </div>
 
-                    <div className="p-4 rounded-2xl bg-zinc-50 border border-zinc-100">
+                    <div className="p-4 rounded-2xl bg-violet-50 border border-violet-100">
                         <div className="flex items-center gap-2 mb-3">
-                            <Sparkles size={14} className="text-emerald-600" />
-                            <span className="text-xs font-black text-emerald-600 uppercase tracking-wider">AI 이미지 도구</span>
+                            <Scissors size={14} className="text-violet-600" />
+                            <span className="text-xs font-black text-violet-600 uppercase tracking-wider">AI 누끼 도구</span>
                         </div>
                         <button
                             onClick={handleRemoveBackground}
-                            className="w-full py-2.5 rounded-xl bg-white border border-zinc-200 text-zinc-900 font-bold text-[11px] hover:border-emerald-500 hover:text-emerald-600 transition-all mb-2 flex items-center justify-center gap-2"
+                            className="w-full py-3 rounded-xl bg-violet-500 text-white font-black text-xs hover:bg-violet-600 transition-all shadow-lg shadow-violet-500/20 flex items-center justify-center gap-2"
                         >
-                            배경 제거 (누끼)
+                            <Scissors size={14} />
+                            배경 제거 (누끼 따기)
                         </button>
-                        <div className="space-y-2">
+                        <p className="text-[10px] text-violet-400 mt-2 text-center">이미지의 배경을 자동으로 제거합니다</p>
+                        <div className="space-y-2 mt-3">
                             <label className="text-[9px] font-black text-zinc-400 uppercase ml-1">배경 교체</label>
                             <div className="flex gap-2">
                                 {['#ffffff', '#f3f4f6', '#111827', '#10b981'].map(color => (

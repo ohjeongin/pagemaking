@@ -232,6 +232,95 @@ const EditorContainer: React.FC = () => {
         setActiveObject(text);
     }, [getActiveCanvas]);
 
+    const addShape = useCallback((type: 'rect' | 'circle' | 'line') => {
+        const canvas = getActiveCanvas();
+        if (!canvas) return;
+
+        const commonProps = {
+            left: 100,
+            top: 100,
+            fill: '#3b82f6',
+            stroke: '#1e40af',
+            strokeWidth: 2,
+            cornerColor: '#10b981',
+            cornerSize: 10,
+            transparentCorners: false,
+            borderColor: '#10b981',
+            cornerStyle: 'circle' as const,
+        };
+
+        let shape: fabric.Object;
+        if (type === 'rect') {
+            shape = new fabric.Rect({ ...commonProps, width: 200, height: 150, rx: 8, ry: 8 });
+        } else if (type === 'circle') {
+            shape = new fabric.Circle({ ...commonProps, radius: 80 });
+        } else {
+            shape = new fabric.Line([100, 100, 400, 100], {
+                ...commonProps,
+                fill: undefined,
+                stroke: '#1e40af',
+                strokeWidth: 4,
+            });
+        }
+
+        canvas.add(shape);
+        canvas.setActiveObject(shape);
+        canvas.requestRenderAll();
+        setActiveObject(shape);
+    }, [getActiveCanvas]);
+
+    const handleAlignObject = useCallback((direction: 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom') => {
+        const canvas = getActiveCanvas();
+        if (!canvas) return;
+        const obj = canvas.getActiveObject();
+        if (!obj) return;
+
+        const canvasWidth = canvas.getWidth();
+        const canvasHeight = canvas.getHeight();
+        const objBound = obj.getBoundingRect();
+
+        switch (direction) {
+            case 'left': obj.set('left', 0); break;
+            case 'center': obj.set('left', (canvasWidth - objBound.width) / 2); break;
+            case 'right': obj.set('left', canvasWidth - objBound.width); break;
+            case 'top': obj.set('top', 0); break;
+            case 'middle': obj.set('top', (canvasHeight - objBound.height) / 2); break;
+            case 'bottom': obj.set('top', canvasHeight - objBound.height); break;
+        }
+        obj.setCoords();
+        canvas.requestRenderAll();
+    }, [getActiveCanvas]);
+
+    const handleAddAIImage = useCallback(async (prompt: string) => {
+        const canvas = getActiveCanvas();
+        if (!canvas) return;
+
+        // Placeholder: In production, this would call an AI image generation API
+        // For now, use a placeholder image from picsum with the prompt as seed
+        const seed = prompt.replace(/\s+/g, '-').substring(0, 30);
+        const url = `https://picsum.photos/seed/${seed}/400/400`;
+
+        try {
+            const img = await fabric.FabricImage.fromURL(url, { crossOrigin: 'anonymous' });
+            img.set({
+                left: 100,
+                top: 100,
+                cornerColor: '#10b981',
+                cornerSize: 10,
+                transparentCorners: false,
+                borderColor: '#10b981',
+                cornerStyle: 'circle',
+            });
+            img.scaleToWidth(300);
+            canvas.add(img);
+            canvas.setActiveObject(img);
+            canvas.requestRenderAll();
+            setActiveObject(img);
+        } catch (error) {
+            console.error('AI Image generation failed:', error);
+        }
+    }, [getActiveCanvas]);
+
     const addImages = useCallback((files: File[]) => {
         const canvas = getActiveCanvas();
         if (!canvas) return;
@@ -675,6 +764,8 @@ const EditorContainer: React.FC = () => {
                     onSetTextureBackground={handleSetTextureBackground}
                     onSetGradientBackground={handleSetGradientBackground}
                     onGenerateAIDetail={handleGenerateAIDetail}
+                    onAddShape={addShape}
+                    onAddAIImage={handleAddAIImage}
                 />
                 <main className="flex-1 min-h-0 overflow-y-auto relative w-full h-full bg-zinc-100">
                     <CanvasWorkarea
@@ -697,6 +788,7 @@ const EditorContainer: React.FC = () => {
                     onDelete={handleDelete}
                     onGroup={handleGroup}
                     onUngroup={handleUngroup}
+                    onAlignObject={handleAlignObject}
                 />
             </div>
         </div>
