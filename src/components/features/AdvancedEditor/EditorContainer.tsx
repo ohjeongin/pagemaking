@@ -295,9 +295,23 @@ const EditorContainer: React.FC = () => {
         const canvas = getActiveCanvas();
         if (!canvas) return;
 
-        // Use Unsplash keyword-based image search for relevant placeholder images
-        const query = encodeURIComponent(prompt.trim());
-        const url = `https://source.unsplash.com/800x800/?${query}`;
+        // Simple translation map for common Korean product terms to improve AI relevancy
+        const translationMap: Record<string, string> = {
+            '달항아리': 'moon-jar, white-porcelain',
+            '원목 테이블': 'wooden-table, furniture',
+            '화장품': 'cosmetic, skincare, beauty-product',
+            '의자': 'modern-chair, interior',
+            '조명': 'minimal-lamp, lighting',
+            '침대': 'bedroom-bed, minimal',
+            '옷': 'fashion-apparel, minimal',
+            '가방': 'fashion-bag, accessories',
+        };
+
+        const translatedPrompt = translationMap[prompt.trim()] || prompt.trim();
+        const query = encodeURIComponent(`${translatedPrompt},product,photography`);
+
+        // Switch to LoremFlickr for better keyword-based image fetching without API keys
+        const url = `https://loremflickr.com/800/800/${query.replace(/%20/g, ',')}`;
 
         try {
             const img = await fabric.FabricImage.fromURL(url, { crossOrigin: 'anonymous' });
