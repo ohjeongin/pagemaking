@@ -295,25 +295,27 @@ const EditorContainer: React.FC = () => {
         const canvas = getActiveCanvas();
         if (!canvas) return;
 
-        // Expanded translation map for better AI relevancy across common commerce terms
+        // Professional-grade translation map for commercial product photography
         const translationMap: Record<string, string> = {
-            '달항아리': 'moon-jar, white-porcelain, pottery',
-            '원목 테이블': 'wooden-table, solid-wood, desk',
-            '화장품': 'skincare-bottle, beauty-product, cosmetic',
-            '의자': 'modern-chair, interior-design, furniture',
-            '조명': 'minimal-lamp, pendant-light, lighting',
-            '침대': 'bedroom-bed, minimal-interior',
-            '옷': 'aesthetic-apparel, fashion-clothing',
-            '가방': 'fashion-bag, leather-handbag',
-            '폴라로이드': 'polaroid-camera, instax, retro-camera',
-            '다이어리': 'stationary-planner, notebook, journal',
-            '키링': 'keychain, cute-accessory',
+            '달항아리': 'white-porcelain-moon-jar,pottery-object',
+            '원목 테이블': 'minimal-wooden-table,furniture-product',
+            '화장품': 'cosmetic-bottle,skincare-packaging',
+            '의자': 'modern-designer-chair,furniture-item',
+            '조명': 'minimalist-interior-lamp,lighting-fixture',
+            '침대': 'modern-minimalist-bed,furniture',
+            '옷': 'folded-clothes,apparel-photography',
+            '가방': 'leather-handbag,fashion-bag-isolated',
+            '폴라로이드': 'polaroid-camera-instax,retro-camera-object',
+            '다이어리': 'journal-notebook-stationary',
+            '키링': 'keychain-accessory-cute',
         };
 
         const translatedPrompt = translationMap[prompt.trim()] || prompt.trim();
-        // Improve tag-based search for LoremFlickr - it uses comma/slash separated tags
-        const queryTags = `${translatedPrompt},product,photography`.replace(/\s+/g, '-').replace(/,/g, '/');
-        const url = `https://loremflickr.com/800/800/${queryTags}`;
+
+        // Force 'studio' and 'product' keywords at the FRONT to override scenery/landscape defaults
+        // LoremFlickr uses slashes to separate tags, we use highly specific object-focused tags
+        const queryTags = `product-shot,studio,white-background,${translatedPrompt.replace(/\s+/g, '-')}`.replace(/,/g, '/');
+        const url = `https://loremflickr.com/800/800/${queryTags}/all`;
 
         try {
             const img = await fabric.FabricImage.fromURL(url, { crossOrigin: 'anonymous' });
