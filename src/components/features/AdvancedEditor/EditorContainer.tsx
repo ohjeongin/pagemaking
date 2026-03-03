@@ -295,10 +295,9 @@ const EditorContainer: React.FC = () => {
         const canvas = getActiveCanvas();
         if (!canvas) return;
 
-        // Placeholder: In production, this would call an AI image generation API
-        // For now, use a placeholder image from picsum with the prompt as seed
-        const seed = prompt.replace(/\s+/g, '-').substring(0, 30);
-        const url = `https://picsum.photos/seed/${seed}/400/400`;
+        // Use Unsplash keyword-based image search for relevant placeholder images
+        const query = encodeURIComponent(prompt.trim());
+        const url = `https://source.unsplash.com/800x800/?${query}`;
 
         try {
             const img = await fabric.FabricImage.fromURL(url, { crossOrigin: 'anonymous' });
@@ -311,15 +310,33 @@ const EditorContainer: React.FC = () => {
                 borderColor: '#10b981',
                 cornerStyle: 'circle',
             });
-            img.scaleToWidth(300);
+            img.scaleToWidth(400);
             canvas.add(img);
             canvas.setActiveObject(img);
             canvas.requestRenderAll();
             setActiveObject(img);
+
+            // Scroll the active section into view
+            const wrapper = document.getElementById(`section-wrapper-${activeSectionId}`);
+            wrapper?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         } catch (error) {
             console.error('AI Image generation failed:', error);
+            // fallback to picsum if unsplash fails
+            try {
+                const seed = prompt.replace(/\s+/g, '-').substring(0, 30);
+                const fallbackUrl = `https://picsum.photos/seed/${seed}/400/400`;
+                const fallbackImg = await fabric.FabricImage.fromURL(fallbackUrl, { crossOrigin: 'anonymous' });
+                fallbackImg.set({ left: 100, top: 100, cornerColor: '#10b981', cornerSize: 10, transparentCorners: false, borderColor: '#10b981', cornerStyle: 'circle' as const });
+                fallbackImg.scaleToWidth(400);
+                canvas.add(fallbackImg);
+                canvas.setActiveObject(fallbackImg);
+                canvas.requestRenderAll();
+                setActiveObject(fallbackImg);
+            } catch (e2) {
+                console.error('Fallback image also failed:', e2);
+            }
         }
-    }, [getActiveCanvas]);
+    }, [getActiveCanvas, activeSectionId]);
 
     const addImages = useCallback((files: File[]) => {
         const canvas = getActiveCanvas();
@@ -508,15 +525,14 @@ const EditorContainer: React.FC = () => {
     const handleGenerateCopy = useCallback(async (keywords: string) => {
         const canvas = getActiveCanvas();
         if (!canvas) return;
-        const centerX = canvas.getWidth() / 2;
-        const centerY = canvas.getHeight() / 2;
 
         try {
             const copy = await generateMarketingCopy(keywords);
 
+            // Place text at top of visible area, not center of 2000px canvas
             const title = new fabric.IText(copy.headline, {
-                left: centerX,
-                top: centerY - 50,
+                left: 430,
+                top: 80,
                 fontSize: 48,
                 fontFamily: 'Noto Sans KR',
                 fontWeight: '900',
@@ -525,23 +541,38 @@ const EditorContainer: React.FC = () => {
             });
 
             const desc = new fabric.IText(copy.subtext, {
-                left: centerX,
-                top: centerY + 40,
+                left: 430,
+                top: 160,
                 fontSize: 20,
                 fontFamily: 'Noto Sans KR',
                 fill: '#374151',
                 textAlign: 'center',
                 originX: 'center',
-                width: 500,
+                width: 600,
             });
 
-            canvas.add(title, desc);
+            const cta = new fabric.IText(copy.cta, {
+                left: 430,
+                top: 240,
+                fontSize: 24,
+                fontFamily: 'Noto Sans KR',
+                fontWeight: '700',
+                fill: '#10b981',
+                originX: 'center',
+            });
+
+            canvas.add(title, desc, cta);
             canvas.setActiveObject(title);
             canvas.requestRenderAll();
+            setActiveObject(title);
+
+            // Scroll into view
+            const wrapper = document.getElementById(`section-wrapper-${activeSectionId}`);
+            wrapper?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         } catch (error) {
             console.error("AI Copy generation failed:", error);
         }
-    }, [getActiveCanvas]);
+    }, [getActiveCanvas, activeSectionId]);
 
     const handleSetSolidBackground = (color: string) => {
         const canvas = getActiveCanvas();
@@ -696,15 +727,15 @@ const EditorContainer: React.FC = () => {
         }
     };
 
-    const handleGenerateAIDetail = () => {
+    const handleGenerateAIDetail = (keywords?: string) => {
         const canvas = getActiveCanvas();
         if (!canvas) return;
 
-        // 1. Clear existing user objects, keep background if needed, but for prototype let's clear all
+        // 1. Clear existing user objects
         canvas.clear();
         canvas.set('backgroundColor', '#f1f5f9');
 
-        const aiData = getMockAIResult();
+        const aiData = getMockAIResult(keywords);
         const canvasWidth = canvas.getWidth();
         let currentY = 0;
 
@@ -712,7 +743,7 @@ const EditorContainer: React.FC = () => {
         aiData.forEach(section => {
             const sectionObjects = createAISectionObjects(section, currentY, canvasWidth);
 
-            // Find the background rect to know the height of this section (it's the first one pushed)
+            // Find the background rect to know the height of this section
             const bgRect = sectionObjects.find(obj => obj.type === 'rect' && obj.width === canvasWidth);
             const sectionHeight = bgRect ? (bgRect.height || 600) : 600;
 
@@ -724,6 +755,10 @@ const EditorContainer: React.FC = () => {
         canvas.setDimensions({ width: canvas.getWidth(), height: currentY });
         canvas.requestRenderAll();
         handleUpdate();
+
+        // Scroll into view
+        const wrapper = document.getElementById(`section-wrapper-${activeSectionId}`);
+        wrapper?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
 
     return (

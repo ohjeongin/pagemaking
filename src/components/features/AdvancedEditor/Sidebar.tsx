@@ -13,7 +13,7 @@ interface SidebarProps {
     onSetSolidBackground?: (color: string) => void;
     onSetTextureBackground?: (url: string) => void;
     onSetGradientBackground?: (stops: { color: string, offset: number }[]) => void;
-    onGenerateAIDetail?: () => void;
+    onGenerateAIDetail?: (keywords?: string) => void;
     onAddShape?: (type: 'rect' | 'circle' | 'line') => void;
     onAddAIImage?: (prompt: string) => void;
 }
@@ -69,12 +69,41 @@ const Sidebar: React.FC<SidebarProps> = ({ onAddText, onAddImages, onAddBlock, o
 
     const handleAssetClick = async (url: string) => {
         try {
-            const response = await fetch(url);
-            const blob = await response.blob();
-            const file = new File([blob], "asset.jpg", { type: "image/jpeg" });
-            onAddImages([file]);
+            // Use Image element with crossOrigin to avoid CORS issues
+            const imgEl = new Image();
+            imgEl.crossOrigin = 'anonymous';
+            imgEl.src = url;
+            await new Promise<void>((resolve, reject) => {
+                imgEl.onload = () => resolve();
+                imgEl.onerror = () => reject(new Error('Image load failed'));
+            });
+
+            const fabricImg = new (await import('fabric')).FabricImage(imgEl);
+            // We need to pass it as a File to onAddImages, so let's create a canvas and export
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = imgEl.naturalWidth;
+            tempCanvas.height = imgEl.naturalHeight;
+            const ctx = tempCanvas.getContext('2d');
+            if (ctx) {
+                ctx.drawImage(imgEl, 0, 0);
+                tempCanvas.toBlob((blob) => {
+                    if (blob) {
+                        const file = new File([blob], 'asset.jpg', { type: 'image/jpeg' });
+                        onAddImages([file]);
+                    }
+                }, 'image/jpeg', 0.95);
+            }
         } catch (error) {
-            console.error("Failed to load asset:", error);
+            console.error('Failed to load asset:', error);
+            // Fallback: try fetch with no-cors
+            try {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                const file = new File([blob], 'asset.jpg', { type: 'image/jpeg' });
+                onAddImages([file]);
+            } catch (e2) {
+                console.error('Fallback also failed:', e2);
+            }
         }
     };
 
@@ -477,14 +506,19 @@ const Sidebar: React.FC<SidebarProps> = ({ onAddText, onAddImages, onAddBlock, o
                 </section>
             </div>
 
-            {/* AI Assistant (Copywriting) */}
+            {/* AI Assistant (One-click layout) */}
             <div className="p-6 bg-zinc-50/50 border-t border-zinc-100 mt-auto">
-                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-100">
-                    <div className="flex items-center gap-2 mb-2">
+                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-100 space-y-3">
+                    <div className="flex items-center gap-2">
                         <Sparkles size={16} className="text-emerald-600" />
-                        <span className="text-xs font-black text-emerald-600 uppercase tracking-wider">AI 스마트 도구</span>
+                        <span className="text-xs font-black text-emerald-600 uppercase tracking-wider">AI 레이아웃 자동 생성</span>
                     </div>
-                    <button className="w-full py-3 rounded-xl bg-emerald-500 text-white font-black text-xs shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition-all flex items-center justify-center gap-2">
+                    <p className="text-[10px] text-emerald-600/60">키워드를 기반으로 Hero, 기능소개, 리뷰 섹션을 한번에 자동 생성합니다.</p>
+                    <button
+                        onClick={() => onGenerateAIDetail?.(keywords || undefined)}
+                        disabled={!keywords.trim()}
+                        className="w-full py-3 rounded-xl bg-emerald-500 text-white font-black text-xs shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
                         <Plus size={14} /> AI 결과물 생성하기
                     </button>
                 </div>

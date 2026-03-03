@@ -20,35 +20,39 @@ export interface ReviewInsight {
     painPoints: string[];
 }
 
-// Simulated AI JSON Response Pipeline Output
-export const getMockAIResult = (): GeneratedSectionData[] => {
+// Keyword-aware AI content generation
+export const getMockAIResult = (keywords?: string): GeneratedSectionData[] => {
+    const keywordList = (keywords || '').split(',').map(k => k.trim()).filter(Boolean);
+    const mainKeyword = keywordList[0] || '프리미엄 제품';
+    const subKeywords = keywordList.slice(1).join(', ') || '품질, 디자인';
+
     return [
         {
             sectionType: 'Hero_Intro',
             toneAndManner: '감성적인',
             content: {
-                headline: '매일 아침 다림질,\n이제 그만하세요.',
-                subtext: '수면 부족 30대 직장인을 위한\n단 1초 완결 구김 방지 컬렉션',
-                highlightWords: ['다림질', '1초 완결'],
+                headline: `${mainKeyword},\n당신의 일상을 바꾸다.`,
+                subtext: `${subKeywords}의 완벽한 조화로 완성된\n프리미엄 ${mainKeyword} 컬렉션`,
+                highlightWords: [mainKeyword, '일상을 바꾸다'],
             },
-            suggestedImagePrompt: 'modern minimalist bedroom with soft morning light'
+            suggestedImagePrompt: `modern minimalist ${mainKeyword} product photography`
         },
         {
             sectionType: 'Solution_Feature',
             toneAndManner: '전문적인',
             content: {
-                headline: '세탁 후 수축률 0.1% 미만',
-                subtext: '수만 번의 건조기 테스트를 통과한\n에어로 쿨링 원단의 압도적 복원력',
-                highlightWords: ['수축률 0.1%', '에어로 쿨링 원단'],
+                headline: `왜 ${mainKeyword}인가요?`,
+                subtext: `${subKeywords}을 위해 설계된\n차별화된 기술력과 압도적 품질`,
+                highlightWords: [mainKeyword, subKeywords],
             },
         },
         {
             sectionType: 'Social_Proof',
             toneAndManner: '홈쇼핑스타일',
             content: {
-                headline: '1,700개의 리뷰가 증명합니다',
-                subtext: '“세탁기 돌리고 바로 입고 나갔는데\n새 옷 산 줄 알았대요!” - 네이버페이 구매자 김**님',
-                highlightWords: ['1,700개', '새 옷 산 줄'],
+                headline: `${mainKeyword} 실사용 후기`,
+                subtext: `"${mainKeyword} 써보니까 진짜 달라요!\n다른 제품 못 쓰겠어요" - 네이버페이 구매자 김**님`,
+                highlightWords: [`${mainKeyword}`, '진짜 달라요'],
             },
         }
     ];
