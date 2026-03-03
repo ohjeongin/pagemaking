@@ -295,23 +295,25 @@ const EditorContainer: React.FC = () => {
         const canvas = getActiveCanvas();
         if (!canvas) return;
 
-        // Simple translation map for common Korean product terms to improve AI relevancy
+        // Expanded translation map for better AI relevancy across common commerce terms
         const translationMap: Record<string, string> = {
-            '달항아리': 'moon-jar, white-porcelain',
-            '원목 테이블': 'wooden-table, furniture',
-            '화장품': 'cosmetic, skincare, beauty-product',
-            '의자': 'modern-chair, interior',
-            '조명': 'minimal-lamp, lighting',
-            '침대': 'bedroom-bed, minimal',
-            '옷': 'fashion-apparel, minimal',
-            '가방': 'fashion-bag, accessories',
+            '달항아리': 'moon-jar, white-porcelain, pottery',
+            '원목 테이블': 'wooden-table, solid-wood, desk',
+            '화장품': 'skincare-bottle, beauty-product, cosmetic',
+            '의자': 'modern-chair, interior-design, furniture',
+            '조명': 'minimal-lamp, pendant-light, lighting',
+            '침대': 'bedroom-bed, minimal-interior',
+            '옷': 'aesthetic-apparel, fashion-clothing',
+            '가방': 'fashion-bag, leather-handbag',
+            '폴라로이드': 'polaroid-camera, instax, retro-camera',
+            '다이어리': 'stationary-planner, notebook, journal',
+            '키링': 'keychain, cute-accessory',
         };
 
         const translatedPrompt = translationMap[prompt.trim()] || prompt.trim();
-        const query = encodeURIComponent(`${translatedPrompt},product,photography`);
-
-        // Switch to LoremFlickr for better keyword-based image fetching without API keys
-        const url = `https://loremflickr.com/800/800/${query.replace(/%20/g, ',')}`;
+        // Improve tag-based search for LoremFlickr - it uses comma/slash separated tags
+        const queryTags = `${translatedPrompt},product,photography`.replace(/\s+/g, '-').replace(/,/g, '/');
+        const url = `https://loremflickr.com/800/800/${queryTags}`;
 
         try {
             const img = await fabric.FabricImage.fromURL(url, { crossOrigin: 'anonymous' });
